@@ -7,12 +7,12 @@ import gdown
 
 app = Flask(__name__)
 
-# --- Model download + load (Render-safe) ---
 BASE_DIR = Path(__file__).resolve().parent
-MODEL_PATH = BASE_DIR / "greatj_best_model.joblib"
+MODEL_PATH = BASE_DIR / "greatj_best_model_mmap.joblib"
 
 def ensure_model():
-    if MODEL_PATH.exists():
+    # If already downloaded, skip
+    if MODEL_PATH.exists() and MODEL_PATH.stat().st_size > 10_000_000:
         return
 
     url = os.getenv("MODEL_URL")
@@ -25,10 +25,8 @@ def ensure_model():
 
 ensure_model()
 
-# Load compressed model
+# ✅ mmap works only with UNCOMPRESSED joblib (this file)
 model = joblib.load(MODEL_PATH, mmap_mode="r")
-
-# --- end model download + load ---
 
 
 @app.route("/", methods=["GET", "POST"])
