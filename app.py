@@ -1,11 +1,37 @@
 from flask import Flask, render_template, request
 import pandas as pd
 import pickle
+from pathlib import Path
+import os
+import urllib.request
 
 app = Flask(__name__)
 
-with open("greatj_best_model.pickle", "rb") as f:
+# --- Model download + load (works on Render) ---
+BASE_DIR = Path(__file__).resolve().parent
+MODEL_PATH = BASE_DIR / "greatj_best_model.pickle"
+
+def ensure_model():
+    """Download the model if it doesn't exist locally."""
+    if MODEL_PATH.exists():
+        return
+
+    url = os.getenv("MODEL_URL")
+    if not url:
+        raise FileNotFoundError(
+            "greatj_best_model.pickle not found and MODEL_URL env var is not set in Render."
+        )
+
+    print(f"Downloading model from: {url}")
+    urllib.request.urlretrieve(url, MODEL_PATH)
+    print("Model downloaded successfully.")
+
+ensure_model()
+
+with open(MODEL_PATH, "rb") as f:
     model = pickle.load(f)
+# --- end model download + load ---
+
 
 @app.route("/", methods=["GET", "POST"])
 def home():
@@ -14,7 +40,6 @@ def home():
 
     if request.method == "POST":
         try:
-            # Read inputs
             inputs = {
                 "person_age": float(request.form["person_age"]),
                 "person_income": float(request.form["person_income"]),
@@ -33,15 +58,15 @@ def home():
             prob = float(model.predict_proba(df)[:, 1][0])
             decision = "APPROVED" if prob >= 0.5 else "REJECTED"
 
-            result = {
-                "probability": prob,
-                "decision": decision
-            }
+            result = {"probability": prob, "decision": decision}
 
         except Exception as e:
             result = {"error": str(e)}
 
     return render_template("index.html", result=result, inputs=inputs)
 
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    # Render provides PORT; locally it defaults to 5000
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=True)
