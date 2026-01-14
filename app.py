@@ -1,17 +1,15 @@
 from flask import Flask, render_template, request
 import pandas as pd
-import pickle
 from pathlib import Path
 import os
-import urllib.request
+import joblib
+import gdown
 
 app = Flask(__name__)
 
-# --- Model download + load (works on Render) ---
+# --- Model download + load (Render-safe) ---
 BASE_DIR = Path(__file__).resolve().parent
-MODEL_PATH = BASE_DIR / "greatj_best_model.pickle"
-
-import gdown
+MODEL_PATH = BASE_DIR / "greatj_best_model.joblib"
 
 def ensure_model():
     if MODEL_PATH.exists():
@@ -19,17 +17,16 @@ def ensure_model():
 
     url = os.getenv("MODEL_URL")
     if not url:
-        raise FileNotFoundError("MODEL_URL environment variable not set.")
+        raise FileNotFoundError("MODEL_URL environment variable not set in Render.")
 
     print("Downloading model from Google Drive using gdown...")
     gdown.download(url, str(MODEL_PATH), quiet=False)
     print("Model downloaded successfully.")
 
-
 ensure_model()
 
-with open(MODEL_PATH, "rb") as f:
-    model = pickle.load(f)
+# Load compressed model
+model = joblib.load(MODEL_PATH)
 # --- end model download + load ---
 
 
@@ -67,6 +64,5 @@ def home():
 
 
 if __name__ == "__main__":
-    # Render provides PORT; locally it defaults to 5000
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=True)
