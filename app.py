@@ -11,20 +11,20 @@ app = Flask(__name__)
 BASE_DIR = Path(__file__).resolve().parent
 MODEL_PATH = BASE_DIR / "greatj_best_model.pickle"
 
+import gdown
+
 def ensure_model():
-    """Download the model if it doesn't exist locally."""
     if MODEL_PATH.exists():
         return
 
     url = os.getenv("MODEL_URL")
     if not url:
-        raise FileNotFoundError(
-            "greatj_best_model.pickle not found and MODEL_URL env var is not set in Render."
-        )
+        raise FileNotFoundError("MODEL_URL environment variable not set.")
 
-    print(f"Downloading model from: {url}")
-    urllib.request.urlretrieve(url, MODEL_PATH)
+    print("Downloading model from Google Drive using gdown...")
+    gdown.download(url, str(MODEL_PATH), quiet=False)
     print("Model downloaded successfully.")
+
 
 ensure_model()
 
