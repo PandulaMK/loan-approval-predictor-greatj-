@@ -1,0 +1,4 @@
+# ML models
+*.pickle
+*.pkl
+greatj_best_model.pickle
