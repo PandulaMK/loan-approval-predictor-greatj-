@@ -26,7 +26,8 @@ def ensure_model():
 ensure_model()
 
 # Load compressed model
-model = joblib.load(MODEL_PATH)
+model = joblib.load(MODEL_PATH, mmap_mode="r")
+
 # --- end model download + load ---
 
 
